@@ -50,13 +50,13 @@ void setup() {
   I2C1.setClock(400000);
   I2C2.begin(SDA2,SCL2,(uint32_t)400000);
 
-  SmcG2I2C smc1(13, I2C2); //Left Motor Controller
-  SmcG2I2C smc2(14, I2C2); //Right Motor Controller
+  SmcG2I2C smc1(13, I2C2); //Left Motor Controller 0x0D
+  SmcG2I2C smc2(14, I2C2); //Right Motor Controller 0x0E
 
   smc1.exitSafeStart();
   smc2.exitSafeStart();
 }
 
 void loop() {
-  i2cBusScanner(I2C1);
+  i2cBusScanner(I2C2);
 }

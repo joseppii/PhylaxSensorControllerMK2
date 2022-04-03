@@ -56,6 +56,8 @@ private:
 
     //methods implemented by subclasses
     virtual void command(uint8_t cmd) = 0;
+    virtual void read(uint8_t reg, uint8_t *buff, uint32_t len) = 0;
+    virtual void write(uint8_t reg, uint8_t *buff, uint32_t len) = 0;
 };
 
 /// Implements an I2C connection to a Smc G2.
@@ -85,4 +87,6 @@ private:
     TwoWire* const _i2c;
 
     void command(uint8_t cmd);
+    void read(uint8_t reg, uint8_t *buff, uint32_t len);
+    void write(uint8_t reg, uint8_t *buff, uint32_t len);
 };
