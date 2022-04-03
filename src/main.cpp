@@ -8,6 +8,38 @@
 TwoWire I2C1 = TwoWire(0); //Setup the first I2C bus for the TFT & IMU
 TwoWire I2C2 = TwoWire(1); //Setup the second I2C bus for the motors 
 
+void i2cBusScanner(TwoWire& I2C)
+{
+  byte error, address;
+  int nDevices;
+  Serial.println("Scanning...");
+
+  nDevices = 0;
+
+  for(address = 1; address < 127; address++ ) {
+    I2C.beginTransmission(address);
+    error = I2C.endTransmission();
+  
+    if (error == 0) {
+      Serial.print("I2C device found at address 0x");
+      
+      if (address<16) {
+        Serial.print("0");
+      }
+      Serial.println(address,HEX);
+      nDevices++;
+    }
+    else if (error==4) {
+      Serial.print("Unknow error at address 0x");
+      if (address<16) {
+        Serial.print("0");
+      }
+      Serial.println(address,HEX);
+    }    
+  }  
+  delay(1000);
+}
+
 void setup() {
 #if defined (ESP32)
   Serial.begin(115200);
@@ -26,5 +58,5 @@ void setup() {
 }
 
 void loop() {
-
+  i2cBusScanner(I2C1);
 }
