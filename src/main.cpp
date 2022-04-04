@@ -1,12 +1,20 @@
 #include <Arduino.h>
+#include <SBUS2.h>
 #include <Wire.h>
+
 #include "SmcG2.h"
 
 #define SDA2 15
 #define SCL2 33
 
+#define RXD2 12
+#define TXD2 27
+
 TwoWire I2C1 = TwoWire(0); //Setup the first I2C bus for the TFT & IMU
 TwoWire I2C2 = TwoWire(1); //Setup the second I2C bus for the motors 
+
+uint8_t FrameErrorRate = 0;
+int16_t channel[16] = {0};
 
 void i2cBusScanner(TwoWire& I2C)
 {
@@ -46,6 +54,8 @@ void setup() {
   Serial.println("Setup Serial...");
 #endif // ESP32
 
+  SBUS2_Setup(RXD2,TXD2);     // For ESP32 set RX and TX Pin Number
+  
   I2C1.begin();
   I2C1.setClock(400000);
   I2C2.begin(SDA2,SCL2,(uint32_t)400000);
@@ -58,5 +68,13 @@ void setup() {
 }
 
 void loop() {
-  i2cBusScanner(I2C2);
+  //i2cBusScanner(I2C2);
+if(SBUS_Ready()){                               // SBUS Frames available -> Ready for getting Servo Data
+      for(uint8_t i = 0; i<3; i++)
+      {
+        channel[i] = SBUS2_get_servo_data(i);   // Channel = Servo Value of Channel
+      }
+      
+      FrameErrorRate = SBUS_get_FER();
+    }
 }
