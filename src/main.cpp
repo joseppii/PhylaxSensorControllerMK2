@@ -13,6 +13,9 @@
 TwoWire I2C1 = TwoWire(0); //Setup the first I2C bus for the TFT & IMU
 TwoWire I2C2 = TwoWire(1); //Setup the second I2C bus for the motors 
 
+SmcG2I2C smc1(13, I2C2); //Left Motor Controller 0x0D
+SmcG2I2C smc2(14, I2C2); //Right Motor Controller 0x0E
+
 uint8_t FrameErrorRate = 0;
 int16_t channel[16] = {0};
 
@@ -48,6 +51,9 @@ void i2cBusScanner(TwoWire& I2C)
   delay(1000);
 }
 
+uint32_t encoder1Count;
+uint32_t encoder2Count;
+
 void setup() {
 #if defined (ESP32)
   Serial.begin(115200);
@@ -60,21 +66,22 @@ void setup() {
   I2C1.setClock(400000);
   I2C2.begin(SDA2,SCL2,(uint32_t)400000);
 
-  SmcG2I2C smc1(13, I2C2); //Left Motor Controller 0x0D
-  SmcG2I2C smc2(14, I2C2); //Right Motor Controller 0x0E
-
   smc1.exitSafeStart();
   smc2.exitSafeStart();
 }
 
 void loop() {
-  //i2cBusScanner(I2C2);
-if(SBUS_Ready()){                               // SBUS Frames available -> Ready for getting Servo Data
-      for(uint8_t i = 0; i<3; i++)
-      {
-        channel[i] = SBUS2_get_servo_data(i);   // Channel = Servo Value of Channel
-      }
-      
-      FrameErrorRate = SBUS_get_FER();
+  if(SBUS_Ready())    // SBUS Frames available -> Ready for getting Servo Data
+  {                               
+    for(uint8_t i = 0; i<3; i++)
+    {
+      channel[i] = SBUS2_get_servo_data(i); // Channel = Servo Value of Channel
     }
+    
+    FrameErrorRate = SBUS_get_FER();
+    smc1.setTargetSpeed((channel[0]-970)*4);
+    smc2.setTargetSpeed((channel[2]-970)*4);
+  }
+
+  delay(30);
 }
