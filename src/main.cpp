@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include <SBUS2.h>
 #include <Wire.h>
-
+#include <WiFi.h>
 #include "SmcG2.h"
 #include "encoder.h"
 
