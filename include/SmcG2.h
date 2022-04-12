@@ -42,6 +42,8 @@ public:
         command(SmcG2Command::exitSafeStart);
     }
 
+    void setTargetSpeed(int speed);
+
 protected:
     /// Zero if the last communication with the device was successful, non-zero
     /// otherwise.
@@ -56,6 +58,7 @@ private:
 
     //methods implemented by subclasses
     virtual void command(uint8_t cmd) = 0;
+    virtual void command7(uint8_t cmd, int val) = 0;
     virtual void read(uint8_t reg, uint8_t *buff, uint32_t len) = 0;
     virtual void write(uint8_t reg, uint8_t *buff, uint32_t len) = 0;
 };
@@ -87,6 +90,7 @@ private:
     TwoWire* const _i2c;
 
     void command(uint8_t cmd);
+    void command7(uint8_t cmd, int val);
     void read(uint8_t reg, uint8_t *buff, uint32_t len);
     void write(uint8_t reg, uint8_t *buff, uint32_t len);
 };
