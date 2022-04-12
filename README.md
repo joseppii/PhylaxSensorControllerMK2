@@ -1,6 +1,6 @@
 # PhylaxSensorControllerMK2
 
-[![Build a firmware](https://github.com/joseppii/PhylaxSensorControllerMK2/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/joseppii/PhylaxSensorControllerMK2/actions/workflows/build.yml)
+[![Actions Status](https://github.com/joseppii/PhylaxSensorControllerMK2/workflows/Build/badge.svg)](https://github.com/joseppii/PhylaxSensorControllerMK2/actions)
 
 <div align="center"> 
 <h2>UNDER CONSTRUCTION - ACTIVE </h2>
