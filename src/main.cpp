@@ -6,7 +6,6 @@
 #include "SmcG2.h"
 #include "encoder.h"
 #include "RosImu.h"
-#include "credentials.h"
 
 #define SDA2 15
 #define SCL2 33
@@ -19,6 +18,18 @@
                        // the ADR jumper is closed the value becomes 0
 
 #define LED_PIN 13
+
+#if __has_include("credentials.h")
+
+// For local development (rename credenials-template.h and use your current WiFi credentials
+#include "credentials.h"
+
+#else
+
+// WiFi credentials
+  char ssid[] = "*****";
+  char password[] = "*****";
+#endif
 
 TwoWire I2C1 = TwoWire(0); //Setup the first I2C bus for the TFT & IMU
 //TwoWire I2C2 = TwoWire(1); //Setup the second I2C bus for the motors 
