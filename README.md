@@ -15,9 +15,9 @@
 1. Motor Controllers        :heavy_check_mark:
 2. Motor Encoders           :heavy_check_mark:
 3. SBUS decoder             :heavy_check_mark:
-4. Micro-ROS2 on ESP32      :hammer:
-5. IMU                      :heavy_check_mark:
-6. Odometer                 :heavy_exclamation_mark:
+4. Micro-ROS2 on ESP32      :heavy_check_mark:
+5. IMU                      :hammer:
+6. Odometer                 :hammer:
 7. Differential Controller  :heavy_exclamation_mark:
 8. SBUS-telemetry           :heavy_exclamation_mark:
 9. TFT display gui          :heavy_exclamation_mark:
