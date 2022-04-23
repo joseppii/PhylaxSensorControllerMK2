@@ -1,11 +1,13 @@
 #include "encoder.h"
 
 
-PololuEncoder::PololuEncoder(int gearing, int cpr, float radius):
+PololuEncoder::PololuEncoder(int gearing, int cpr, float radius, uint8_t negative, uint8_t positive):
   _encoderCountPrev(0),
   _gears(gearing),
   _cpr(cpr),
   _wheelRadius(radius),
+  _negativePin(negative),
+  _positivePin(positive),
   _pathDistance(0),
   _dPhiL(0),
   _dPhiR(0),
@@ -16,12 +18,12 @@ PololuEncoder::PololuEncoder(int gearing, int cpr, float radius):
   _encoder = new ESP32Encoder();
 }
 
-void PololuEncoder::init(uint8_t neg, uint8_t pos )
+void PololuEncoder::init()
 {
   // Enable the weak pull up resistors
   ESP32Encoder::useInternalWeakPullResistors=UP;
   
-  _encoder->attachFullQuad(neg, pos);
+  _encoder->attachFullQuad(_negativePin, _positivePin);
 
   //Clear encoder count
   _encoder->clearCount();

@@ -9,16 +9,19 @@ class PololuEncoder
   public:
     uint32_t _encoderCountPrev;
    
-    PololuEncoder(int gearing, int cpr, float radius);
+    PololuEncoder(int gearing, int cpr, float radius, uint8_t negative, uint8_t positive);
     
-    void init(uint8_t neg, uint8_t pos);
+    void init();
     void update(uint32_t &encoderCount);
     
   //private:
     float _gears; 
     float _cpr; 
     float _wheelRadius;
-    float _pathDistance;    
+    float _pathDistance;
+
+    uint8_t _negativePin;
+    uint8_t _positivePin;    
 
     float _dPhiL;
     float _dPhiR;
