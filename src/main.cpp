@@ -1,11 +1,16 @@
-#include <Arduino.h>
-
+#include <micro_ros_arduino.h>
 #include <SBUS2.h>
 #include <Wire.h>
 #include <WiFi.h>
 #include "SmcG2.h"
 #include "encoder.h"
-#include "RosImu.h"
+#include "PhylaxImu.h"
+
+#include <stdio.h>
+#include <rcl/rcl.h>
+#include <rcl/error_handling.h>
+#include <rclc/rclc.h>
+#include <rclc/executor.h>
 
 #define SDA2 15
 #define SCL2 33
@@ -32,7 +37,7 @@
 #endif
 
 TwoWire I2C1 = TwoWire(0); //Setup the first I2C bus for the TFT & IMU
-//TwoWire I2C2 = TwoWire(1); //Setup the second I2C bus for the motors 
+//TwoWire I2C2 = TwoWire(1); //Setup the second I2C bus for the motors
 
 SmcG2I2C smc1(13, I2C1); //Left Motor Controller 0x0D
 SmcG2I2C smc2(14, I2C1); //Right Motor Controller 0x0E
@@ -40,24 +45,65 @@ SmcG2I2C smc2(14, I2C1); //Right Motor Controller 0x0E
 PololuEncoder encoderLeft(34, 48, 0.03);  //Left
 PololuEncoder encoderRight(34, 48, 0.03); //Right
 
-ICM_20948_I2C myICM; //Create an ICM_20948_I2C object
-RosImu rosImu(myICM);
+rcl_publisher_t publisher;
+rclc_executor_t executor;
+rclc_support_t support;
+rcl_allocator_t allocator;
+rcl_node_t node;
+rcl_timer_t timer;
 
+char agent_ip[] = "192.168.2.5";
+uint agent_port = 8888;
+
+unsigned long long time_offset = 0;
 uint8_t FrameErrorRate = 0;
 int16_t channel[16] = {0};
+
+#define LED_PIN 13
+
+#define RCCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){error_loop();}}
+#define RCSOFTCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){}}
+
+PhylaxImu imu;
+
+struct timespec getTime()
+{
+    struct timespec tp = {0};
+    // add time difference between uC time and ROS time to
+    // synchronize time with ROS
+    unsigned long long now = millis() + time_offset;
+    tp.tv_sec = now / 1000;
+    tp.tv_nsec = (now % 1000) * 1000000;
+
+    return tp;
+}
+
+void error_loop() 
+{
+  while(1){
+    digitalWrite(LED_PIN, !digitalRead(LED_PIN));
+    delay(100);
+  }
+}
+
+void timer_callback(rcl_timer_t * timer, int64_t last_call_time)
+{  
+  RCLC_UNUSED(last_call_time);
+  RCLC_UNUSED(timer);
+}
 
 void i2cBusScanner(TwoWire& I2C)
 {
   byte error, address;
   int nDevices;
   Serial.println("Scanning...");
-
+  
   nDevices = 0;
 
   for(address = 1; address < 127; address++ ) {
     I2C.beginTransmission(address);
     error = I2C.endTransmission();
-  
+   
     if (error == 0) {
       Serial.print("I2C device found at address 0x");
       
@@ -93,17 +139,51 @@ void setup() {
   I2C1.setClock(400000);
   //I2C2.begin(SDA2,SCL2,(uint32_t)400000);
 
+  Serial.println(F("Device connected!"));  
+  set_microros_wifi_transports(ssid, password, agent_ip, agent_port);
+  
+  Serial.println("");
+  Serial.println("WiFi connected");
+  Serial.println("IP address: ");
+  Serial.println(WiFi.localIP());
+
   encoderLeft.init(19,18);
   encoderRight.init(17,16);
 
   smc1.exitSafeStart();
   smc2.exitSafeStart();
 
-  rosImu.begin(I2C1, AD0_VAL);
-  rosImu.init();
-} 
+  pinMode(LED_PIN, OUTPUT);
+  digitalWrite(LED_PIN, HIGH);  
+  
+  imu.startImu(I2C1, AD0_VAL);
+ 
+  delay(2000);
+
+  allocator = rcl_get_default_allocator();
+
+  //create init_options
+  RCCHECK(rclc_support_init(&support, 0, NULL, &allocator));
+
+  // create node
+  RCCHECK(rclc_node_init_default(&node, "phylax_sensor_node", "", &support));
+
+  RCCHECK(imu.init(node, "imu/data"));
+  // create timer,
+  const unsigned int timer_timeout = 1000;
+  RCCHECK(rclc_timer_init_default(
+    &timer,
+    &support,
+    RCL_MS_TO_NS(timer_timeout),
+    timer_callback));
+
+  // create executor
+  RCCHECK(rclc_executor_init(&executor, &support.context, 2, &allocator));
+  }
 
 void loop() {
+  struct timespec time_stamp = getTime();
+
   if(SBUS_Ready())    // SBUS Frames available -> Ready for getting Servo Data
   {                               
     for(uint8_t i = 0; i<3; i++)
@@ -116,10 +196,13 @@ void loop() {
     smc1.setTargetSpeed((channel[0]-970)*4);
     smc2.setTargetSpeed((channel[2]-970)*4);
   }
-
+  
   encoderLeft.update(encoder1Count);
   encoderRight.update(encoder2Count);
-  
-  rosImu.read();
-  delay(30);
+
+  imu.readData();
+  RCSOFTCHECK(imu.publish(time_stamp));
+
+delay(10);
+
 }
