@@ -5,6 +5,7 @@
 #include "SmcG2.h"
 #include "encoder.h"
 #include "PhylaxImu.h"
+#include "Odometer.h"
 
 #include <stdio.h>
 #include <rcl/rcl.h>
@@ -42,8 +43,9 @@ TwoWire I2C1 = TwoWire(0); //Setup the first I2C bus for the TFT & IMU
 SmcG2I2C smc1(13, I2C1); //Left Motor Controller 0x0D
 SmcG2I2C smc2(14, I2C1); //Right Motor Controller 0x0E
 
-PololuEncoder encoderLeft(34, 48, 0.03);  //Left
-PololuEncoder encoderRight(34, 48, 0.03); //Right
+PololuEncoder encoderLeft(34, 48, 0.03, 19, 18);  //Left motor encoder
+PololuEncoder encoderRight(34, 48, 0.03, 17, 16); //Right motoer encoder
+Odometer odom(encoderLeft, encoderRight);
 
 rcl_publisher_t publisher;
 rclc_executor_t executor;
@@ -124,9 +126,6 @@ void i2cBusScanner(TwoWire& I2C)
   delay(1000);
 }
 
-uint32_t encoder1Count;
-uint32_t encoder2Count;
-
 void setup() {
 #if defined (ESP32)
   Serial.begin(115200);
@@ -147,9 +146,6 @@ void setup() {
   Serial.println("IP address: ");
   Serial.println(WiFi.localIP());
 
-  encoderLeft.init(19,18);
-  encoderRight.init(17,16);
-
   smc1.exitSafeStart();
   smc2.exitSafeStart();
 
@@ -157,7 +153,7 @@ void setup() {
   digitalWrite(LED_PIN, HIGH);  
   
   imu.startImu(I2C1, AD0_VAL);
- 
+
   delay(2000);
 
   allocator = rcl_get_default_allocator();
@@ -169,6 +165,8 @@ void setup() {
   RCCHECK(rclc_node_init_default(&node, "phylax_sensor_node", "", &support));
 
   RCCHECK(imu.init(node, "imu/data"));
+  RCCHECK(odom.init(node,"/odom", 0.25)); 
+
   // create timer,
   const unsigned int timer_timeout = 1000;
   RCCHECK(rclc_timer_init_default(
@@ -197,12 +195,13 @@ void loop() {
     smc2.setTargetSpeed((channel[2]-970)*4);
   }
   
-  encoderLeft.update(encoder1Count);
-  encoderRight.update(encoder2Count);
-
   imu.readData();
-  RCSOFTCHECK(imu.publish(time_stamp));
+  odom.updateEncoders();
+  //odom.evaluateRobotPose(time_diff)
 
-delay(10);
+  RCSOFTCHECK(imu.publish(time_stamp));
+  RCSOFTCHECK(odom.publish_odom(time_stamp));
+
+  delay(10);
 
 }
